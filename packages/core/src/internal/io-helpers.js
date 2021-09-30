@@ -1,4 +1,4 @@
-import * as is from '@redux-saga/is'
+import * as is from '../../../is/src'
 import { call, fork } from './io'
 import { check } from './utils'
 import {
@@ -15,6 +15,13 @@ const validateTakeEffect = (fn, patternOrChannel, worker) => {
   check(worker, is.notUndef, `${fn.name} requires a saga parameter`)
 }
 
+/**
+ *
+ * @param {*} patternOrChannel
+ * @param {*} worker
+ * @param  {...any} args
+ * @returns {type: 'FORK', payload: { context, fn, args }
+ */
 export function takeEvery(patternOrChannel, worker, ...args) {
   if (process.env.NODE_ENV !== 'production') {
     validateTakeEffect(takeEvery, patternOrChannel, worker)

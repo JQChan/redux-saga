@@ -1,6 +1,6 @@
 import _extends from '@babel/runtime/helpers/extends'
-import * as is from '@redux-saga/is'
-import { SAGA_LOCATION, SAGA_ACTION, TASK_CANCEL, TERMINATE } from '@redux-saga/symbols'
+import * as is from '../../../is/src'
+import { SAGA_LOCATION, SAGA_ACTION, TASK_CANCEL, TERMINATE } from '../../../symbols/src'
 
 export const konst = v => () => v
 export const kTrue = konst(true)
@@ -18,6 +18,7 @@ if (process.env.NODE_ENV !== 'production' && typeof Proxy !== 'undefined') {
 
 export { noop }
 
+/** 输入什么返回什么 */
 export const identity = v => v
 
 const hasSymbol = typeof Symbol === 'function'
@@ -64,10 +65,13 @@ export function once(fn) {
   }
 }
 
+/** 抛出异常 */
 const kThrow = err => {
   throw err
 }
 const kReturn = value => ({ value, done: true })
+
+/** 构建一个saga的迭代器，包含meta、next、throw、return、isSagaIterator属性 */
 export function makeIterator(next, thro = kThrow, name = 'iterator') {
   const iterator = { meta: { name }, next, throw: thro, return: kReturn, isSagaIterator: true }
 
@@ -115,6 +119,7 @@ const freezeActions = store => next => action => next(Object.freeze(action))
 // creates empty, but not-holey array
 export const createEmptyArray = n => Array.apply(null, new Array(n))
 
+/** 包装saga的dispatch，扩展的saga的action会有一个SAGA_ACTION属性，值为true */
 export const wrapSagaDispatch = dispatch => action => {
   if (process.env.NODE_ENV !== 'production') {
     check(action, ac => !Object.isFrozen(ac), FROZEN_ACTION_ERROR)

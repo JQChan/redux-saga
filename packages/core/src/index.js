@@ -1,4 +1,4 @@
-export { CANCEL, SAGA_LOCATION } from '@redux-saga/symbols'
+export { CANCEL, SAGA_LOCATION } from '../../symbols/src'
 export { default } from './internal/middleware'
 
 export { runSaga } from './internal/runSaga'

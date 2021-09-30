@@ -1,4 +1,4 @@
-import * as is from '@redux-saga/is'
+import * as is from '../../../is/src'
 import { kTrue } from './utils'
 
 export const array = patterns => input => patterns.some(p => matcher(p)(input))
@@ -7,6 +7,7 @@ export const string = pattern => input => input.type === String(pattern)
 export const symbol = pattern => input => input.type === pattern
 export const wildcard = () => kTrue
 
+/** 匹配器 */
 export default function matcher(pattern) {
   // prettier-ignore
   const matcherCreator = (

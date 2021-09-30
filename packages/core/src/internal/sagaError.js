@@ -1,11 +1,13 @@
 // there can be only a single saga error created at any given moment
 // so this module acts as a singleton for bookkeeping it
+// 在任何给定时刻只能创建一个saga错误
 import { getLocation, flatMap } from './utils'
 
 function formatLocation(fileName, lineNumber) {
   return `${fileName}?${lineNumber}`
 }
 
+// 获取Effect Location
 function effectLocationAsString(effect) {
   const location = getLocation(effect)
   if (location) {
@@ -16,6 +18,7 @@ function effectLocationAsString(effect) {
   return ''
 }
 
+// 获取saga Location
 function sagaLocationAsString(sagaMeta) {
   const { name, location } = sagaMeta
   if (location) {
@@ -24,7 +27,9 @@ function sagaLocationAsString(sagaMeta) {
   return name
 }
 
+// 获取cancelled Tasks
 function cancelledTasksAsString(sagaStack) {
+  /** 返回saga堆栈中的所有cancelled Tasks */
   const cancelledTasks = flatMap(i => i.cancelledTasks, sagaStack)
   if (!cancelledTasks.length) {
     return ''
@@ -32,14 +37,18 @@ function cancelledTasksAsString(sagaStack) {
   return ['Tasks cancelled due to error:', ...cancelledTasks].join('\n')
 }
 
+/** 崩溃的Effect */
 let crashedEffect = null
+/** saga堆栈 {meta, cancelledTasks, crashedEffect}*/
 const sagaStack = []
 
+/** 添加saga入saga堆栈 */
 export const addSagaFrame = frame => {
   frame.crashedEffect = crashedEffect
   sagaStack.push(frame)
 }
 
+/** 清除saga堆栈 */
 export const clear = () => {
   crashedEffect = null
   sagaStack.length = 0
@@ -48,6 +57,7 @@ export const clear = () => {
 // this sets crashed effect for the soon-to-be-reported saga frame
 // this slightly streatches the singleton nature of this module into wrong direction
 // as it's even less obvious what's the data flow here, but it is what it is for now
+/** 设置崩溃effect，crashedEffect是实时的 */
 export const setCrashedEffect = effect => {
   crashedEffect = effect
 }

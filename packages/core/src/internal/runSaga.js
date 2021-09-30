@@ -1,4 +1,4 @@
-import * as is from '@redux-saga/is'
+import * as is from '../../../is/src'
 import { compose } from 'redux'
 import proc from './proc'
 import { stdChannel } from './channel'
@@ -18,14 +18,17 @@ export function runSaga(
     check(saga, is.func, NON_GENERATOR_ERR)
   }
 
+  // 迭代器
   const iterator = saga(...args)
 
   if (process.env.NODE_ENV !== 'production') {
     check(iterator, is.iterator, NON_GENERATOR_ERR)
   }
 
+  // EffectId
   const effectId = nextSagaId()
 
+  // 如果有saga监视器
   if (sagaMonitor) {
     // monitors are expected to have a certain interface, let's fill-in any missing ones
     sagaMonitor.rootSagaStarted = sagaMonitor.rootSagaStarted || noop
@@ -56,11 +59,14 @@ export function runSaga(
     check(onError, is.func, 'onError passed to the redux-saga is not a function!')
   }
 
+  // 最后执行的Effect
   let finalizeRunEffect
+  // 如果存在effect中间件
   if (effectMiddlewares) {
     const middleware = compose(...effectMiddlewares)
     finalizeRunEffect = runEffect => {
       return (effect, effectId, currCb) => {
+        // 扁平执行Effect
         const plainRunEffect = eff => runEffect(eff, effectId, currCb)
         return middleware(plainRunEffect)(effect)
       }
@@ -69,6 +75,7 @@ export function runSaga(
     finalizeRunEffect = identity
   }
 
+  /** 环境变量  */
   const env = {
     channel,
     dispatch: wrapSagaDispatch(dispatch),
@@ -78,6 +85,7 @@ export function runSaga(
     finalizeRunEffect,
   }
 
+  /** 调度器执行任务并返回任务 */
   return immediately(() => {
     const task = proc(env, iterator, context, effectId, getMetaInfo(saga), /* isRoot */ true, undefined)
 

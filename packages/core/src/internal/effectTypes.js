@@ -1,3 +1,4 @@
+/** Effect类型 */
 export const TAKE = 'TAKE'
 export const PUT = 'PUT'
 export const ALL = 'ALL'

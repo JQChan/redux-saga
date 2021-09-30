@@ -1,8 +1,15 @@
-import * as is from '@redux-saga/is'
+import * as is from '../../../is/src'
 import { check, assignWithSymbols, createSetContextWarning } from './utils'
 import { stdChannel } from './channel'
 import { runSaga } from './runSaga'
 
+/**
+ * saga中间件工厂函数，返回一个中间件
+ * 函数中维护了一个boundRunSaga变量
+ * 这个变量绑定的runSaga
+ * @param {*} param0
+ * @returns
+ */
 export default function sagaMiddlewareFactory({ context = {}, channel = stdChannel(), sagaMonitor, ...options } = {}) {
   let boundRunSaga
 
@@ -10,6 +17,7 @@ export default function sagaMiddlewareFactory({ context = {}, channel = stdChann
     check(channel, is.channel, 'options.channel passed to the Saga middleware is not a channel')
   }
 
+  /** saga中间件 */
   function sagaMiddleware({ getState, dispatch }) {
     boundRunSaga = runSaga.bind(null, {
       ...options,
@@ -21,10 +29,13 @@ export default function sagaMiddlewareFactory({ context = {}, channel = stdChann
     })
 
     return next => action => {
+      // saga监视器
       if (sagaMonitor && sagaMonitor.actionDispatched) {
         sagaMonitor.actionDispatched(action)
       }
+      // 传递action给其他reducer
       const result = next(action) // hit reducers
+      // 将action放进channel中
       channel.put(action)
       return result
     }

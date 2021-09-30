@@ -1,5 +1,5 @@
-import * as is from '@redux-saga/is'
-import { CHANNEL_END_TYPE, MATCH, MULTICAST, SAGA_ACTION } from '@redux-saga/symbols'
+import * as is from '../../../is/src'
+import { CHANNEL_END_TYPE, MATCH, MULTICAST, SAGA_ACTION } from '../../../symbols/src'
 import { check, remove, once, internalErr } from './utils'
 import * as buffers from './buffers'
 import { asap } from './scheduler'
@@ -15,8 +15,14 @@ Hints:
   - check that your Action Creator returns a non-undefined value
   - if the Saga was started using runSaga, check that your subscribe source provides the action to its listeners`
 
+/**
+ * channel
+ * @param {、} buffer
+ * @returns { take, put, flush, close }
+ */
 export function channel(buffer = buffers.expanding()) {
   let closed = false
+  // 保存回调函数队列
   let takers = []
 
   if (process.env.NODE_ENV !== 'production') {
@@ -32,6 +38,7 @@ export function channel(buffer = buffers.expanding()) {
     }
   }
 
+  // 如果回调函数队列为空，将input塞入buffer当中，不为空，执行回调队列的第一个
   function put(input) {
     if (process.env.NODE_ENV !== 'production') {
       checkForbiddenStates()
@@ -48,6 +55,7 @@ export function channel(buffer = buffers.expanding()) {
     cb(input)
   }
 
+  // 接受一个回调，如果channel未关闭或者buffer不为空，将buffer当前的take作为参数执行回调，如果buffer为空，takers塞入回调
   function take(cb) {
     if (process.env.NODE_ENV !== 'production') {
       checkForbiddenStates()
@@ -66,6 +74,7 @@ export function channel(buffer = buffers.expanding()) {
     }
   }
 
+  // 接受一个callback回调，如果channel没有关闭或者buffer不为空，将buffer中的takers作为参数执行回调
   function flush(cb) {
     if (process.env.NODE_ENV !== 'production') {
       checkForbiddenStates()
@@ -79,6 +88,7 @@ export function channel(buffer = buffers.expanding()) {
     cb(buffer.flush())
   }
 
+  // 关闭channel，每个taker执行action { type: CHANNEL_END_TYPE }
   function close() {
     if (process.env.NODE_ENV !== 'production') {
       checkForbiddenStates()
@@ -107,6 +117,12 @@ export function channel(buffer = buffers.expanding()) {
   }
 }
 
+/**
+ * event channel
+ * @param {*} subscribe
+ * @param {*} buffer
+ * @returns
+ */
 export function eventChannel(subscribe, buffer = buffers.none()) {
   let closed = false
   let unsubscribe
@@ -150,6 +166,10 @@ export function eventChannel(subscribe, buffer = buffers.none()) {
   }
 }
 
+/**
+ *
+ * @returns
+ */
 export function multicastChannel() {
   let closed = false
   let currentTakers = []
@@ -230,10 +250,15 @@ export function multicastChannel() {
   }
 }
 
+/**
+ * 输入输出channel
+ * @returns
+ */
 export function stdChannel() {
   const chan = multicastChannel()
   const { put } = chan
   chan.put = input => {
+    // 如果是SAGA_ACTION
     if (input[SAGA_ACTION]) {
       put(input)
       return

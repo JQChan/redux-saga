@@ -4,14 +4,14 @@ const cjs = BABEL_ENV === 'cjs' || NODE_ENV === 'test'
 
 module.exports = {
   presets: [
-    [
-      '@babel/preset-env',
-      {
-        loose: true,
-        modules: false,
-        forceAllTransforms: true,
-      },
-    ],
+    // [
+    //   '@babel/preset-env',
+    //   {
+    //     loose: true,
+    //     modules: false,
+    //     forceAllTransforms: true,
+    //   },
+    // ],
     '@babel/preset-react',
   ],
   plugins: [cjs && '@babel/plugin-transform-modules-commonjs'].filter(Boolean),

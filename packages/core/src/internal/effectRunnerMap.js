@@ -1,5 +1,5 @@
-import { SELF_CANCELLATION, TERMINATE } from '@redux-saga/symbols'
-import * as is from '@redux-saga/is'
+import { SELF_CANCELLATION, TERMINATE } from '../../../symbols/src'
+import * as is from '../../../is/src'
 import * as effectTypes from './effectTypes'
 import { channel, isEnd } from './channel'
 // usage of proc here makes internal circular dependency
@@ -20,6 +20,7 @@ import {
   getMetaInfo,
 } from './utils'
 
+/** 获取迭代器的meta信息 */
 function getIteratorMetaInfo(iterator, fn) {
   if (iterator.isSagaIterator) {
     return { name: iterator.meta.name }
@@ -27,6 +28,7 @@ function getIteratorMetaInfo(iterator, fn) {
   return getMetaInfo(fn)
 }
 
+/** 创建任务迭代器 */
 function createTaskIterator({ context, fn, args }) {
   // catch synchronous failures; see #152 and #441
   try {
@@ -83,12 +85,16 @@ function runPutEffect(env, { channel, action, resolve }, cb) {
   // Put effects are non cancellables
 }
 
+/** 执行take Effect */
 function runTakeEffect(env, { channel = env.channel, pattern, maybe }, cb) {
+  // take回调
   const takeCb = input => {
+    // 错误
     if (input instanceof Error) {
       cb(input, true)
       return
     }
+    // channel结束 'CHANNEL_END_TYPE'
     if (isEnd(input) && !maybe) {
       cb(TERMINATE)
       return
@@ -205,6 +211,7 @@ function runJoinEffect(env, taskOrTasks, cb, { task }) {
   }
 }
 
+/** 取消单个任务 */
 function cancelSingleTask(taskToCancel) {
   if (taskToCancel.isRunning()) {
     taskToCancel.cancel()

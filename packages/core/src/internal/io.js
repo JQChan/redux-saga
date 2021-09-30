@@ -1,12 +1,18 @@
-import delayP from '@redux-saga/delay-p'
-import * as is from '@redux-saga/is'
-import { IO, SELF_CANCELLATION } from '@redux-saga/symbols'
+/* eslint-disable no-console */
+import delayP from '../../../delay-p/src'
+import * as is from '../../../is/src'
+import { IO, SELF_CANCELLATION } from '../../../symbols/src'
 import { check, createSetContextWarning, identity } from './utils'
 import * as effectTypes from './effectTypes'
 
 const TEST_HINT =
   '\n(HINT: if you are getting these errors in tests, consider using createMockTask from @redux-saga/testing-utils)'
 
+/**
+ * 返回一个action对象
+ * @param {*} type
+ * @param {*} payload
+ */
 const makeEffect = (type, payload) => ({
   [IO]: true,
   // this property makes all/race distinguishable in generic manner from other effects
@@ -18,6 +24,11 @@ const makeEffect = (type, payload) => ({
 
 const isForkEffect = eff => is.effect(eff) && eff.type === effectTypes.FORK
 
+/**
+ * 分离Effect
+ * @param {*} eff
+ * @returns ({ type: 'FORK', payload: {...payload, detached: true}})
+ */
 export const detach = eff => {
   if (process.env.NODE_ENV !== 'production') {
     check(eff, isForkEffect, 'detach(eff): argument must be a fork effect')
@@ -25,19 +36,30 @@ export const detach = eff => {
   return makeEffect(effectTypes.FORK, { ...eff.payload, detached: true })
 }
 
+/**
+ * 创建一个Effect，用来命令middleware在store上等待指定的action
+ * @param {*} patternOrChannel
+ * @param {*} multicastPattern 多播模式
+ * @returns {{type: 'TAKE', payload: {pattern, channel}}
+ */
 export function take(patternOrChannel = '*', multicastPattern) {
   if (process.env.NODE_ENV !== 'production' && arguments.length) {
     check(arguments[0], is.notUndef, 'take(patternOrChannel): patternOrChannel is undefined')
   }
+  //如果patternOrChannel为pattern， 返回{type: 'TAKE'， payload: {pattern: patternOrChannel }}
   if (is.pattern(patternOrChannel)) {
     if (is.notUndef(multicastPattern)) {
-      console.warn(`take(pattern) takes one argument but two were provided. Consider passing an array for listening to several action types`)
+      console.warn(
+        `take(pattern) takes one argument but two were provided. Consider passing an array for listening to several action types`,
+      )
     }
     return makeEffect(effectTypes.TAKE, { pattern: patternOrChannel })
   }
+  //如果patternOrChannel为multicast多播， 返回{type: 'TAKE'， payload: {channel: patternOrChannel, pattern: multicastPattern  }}
   if (is.multicast(patternOrChannel) && is.notUndef(multicastPattern) && is.pattern(multicastPattern)) {
     return makeEffect(effectTypes.TAKE, { channel: patternOrChannel, pattern: multicastPattern })
   }
+  //如果patternOrChannel为channel， 返回{type: 'TAKE'， payload: {channel: patternOrChannel }}
   if (is.channel(patternOrChannel)) {
     if (is.notUndef(multicastPattern)) {
       console.warn(`take(channel) takes one argument but two were provided. Second argument is ignored.`)
@@ -49,12 +71,23 @@ export function take(patternOrChannel = '*', multicastPattern) {
   }
 }
 
+/**
+ *
+ * @param  {...any} args
+ * @returns {{type: 'TAKE', payload: {...payload, maybe}}
+ */
 export const takeMaybe = (...args) => {
   const eff = take(...args)
   eff.payload.maybe = true
   return eff
 }
 
+/**
+ *
+ * @param {*} channel
+ * @param {*} action
+ * @returns {{type: 'PUT', payload: {channel, action}}
+ */
 export function put(channel, action) {
   if (process.env.NODE_ENV !== 'production') {
     if (arguments.length > 1) {
@@ -73,18 +106,33 @@ export function put(channel, action) {
   return makeEffect(effectTypes.PUT, { channel, action })
 }
 
+/**
+ * 获取putResolve Effect
+ * @param  {...any} args
+ * @returns {{type: 'PUT', payload: {channel, action, resolve: true}}
+ */
 export const putResolve = (...args) => {
   const eff = put(...args)
   eff.payload.resolve = true
   return eff
 }
 
+/**
+ * 获取ALL Effect
+ * @param {*} effects
+ * @returns {{type: 'ALL', payload: effects, combinator: true}
+ */
 export function all(effects) {
   const eff = makeEffect(effectTypes.ALL, effects)
   eff.combinator = true
   return eff
 }
 
+/**
+ * 获取RACE Effect
+ * @param {*} effects
+ * @returns {{type: 'RACE', payload: effects, combinator: true}
+ */
 export function race(effects) {
   const eff = makeEffect(effectTypes.RACE, effects)
   eff.combinator = true
@@ -92,6 +140,12 @@ export function race(effects) {
 }
 
 // this match getFnCallDescriptor logic
+/**
+ * 校验fn是否为函数
+ * @param {*} effectName
+ * @param {*} fnDescriptor
+ * @returns
+ */
 const validateFnDescriptor = (effectName, fnDescriptor) => {
   check(fnDescriptor, is.notUndef, `${effectName}: argument fn is undefined or null`)
 
@@ -121,19 +175,28 @@ const validateFnDescriptor = (effectName, fnDescriptor) => {
   check(fn, is.func, `${effectName}: unpacked fn argument (from [context, fn] or {context, fn}) is not a function`)
 }
 
+/**
+ * 获取fn函数Call描述符
+ * @param {*} fnDescriptor
+ * @param {*} args
+ */
 function getFnCallDescriptor(fnDescriptor, args) {
   let context = null
   let fn
 
+  // fnDescriptor是否为函数
   if (is.func(fnDescriptor)) {
     fn = fnDescriptor
   } else {
+    // fnDescriptor是否为数组
     if (is.array(fnDescriptor)) {
       ;[context, fn] = fnDescriptor
     } else {
+      // fnDescriptor为对象
       ;({ context, fn } = fnDescriptor)
     }
 
+    // 如果context[fn]为函数
     if (context && is.string(fn) && is.func(context[fn])) {
       fn = context[fn]
     }
@@ -142,8 +205,19 @@ function getFnCallDescriptor(fnDescriptor, args) {
   return { context, fn, args }
 }
 
+/**
+ * 判断fn不是延迟的Effect
+ * @param {*} fn
+ * @returns
+ */
 const isNotDelayEffect = fn => fn !== delay
 
+/**
+ * 获取CALL Effect
+ * @param {*} fnDescriptor
+ * @param  {...any} args
+ * @returns ({type: 'CALL', payload: { context, fn, args })
+ */
 export function call(fnDescriptor, ...args) {
   if (process.env.NODE_ENV !== 'production') {
     const arg0 = typeof args[0] === 'number' ? args[0] : 'ms'
@@ -157,6 +231,12 @@ export function call(fnDescriptor, ...args) {
   return makeEffect(effectTypes.CALL, getFnCallDescriptor(fnDescriptor, args))
 }
 
+/**
+ * 获取fnDescriptor的apply方法
+ * @param {*} fnDescriptor
+ * @param  {...any} args
+ * @returns {{type: 'CALL', payload: { context, fn, args }}
+ */
 export function apply(context, fn, args = []) {
   const fnDescriptor = [context, fn]
 
@@ -174,6 +254,12 @@ export function cps(fnDescriptor, ...args) {
   return makeEffect(effectTypes.CPS, getFnCallDescriptor(fnDescriptor, args))
 }
 
+/**
+ * 获取
+ * @param {*} fnDescriptor
+ * @param  {...any} args
+ * @returns {{type: 'FORK', payload: { context, fn, args }}
+ */
 export function fork(fnDescriptor, ...args) {
   if (process.env.NODE_ENV !== 'production') {
     validateFnDescriptor('fork', fnDescriptor)
@@ -183,6 +269,12 @@ export function fork(fnDescriptor, ...args) {
   return makeEffect(effectTypes.FORK, getFnCallDescriptor(fnDescriptor, args))
 }
 
+/**
+ *
+ * @param {*} fnDescriptor
+ * @param  {...any} args
+ * @returns ({ type: 'FORK', payload: {...payload, detached: true}})
+ */
 export function spawn(fnDescriptor, ...args) {
   if (process.env.NODE_ENV !== 'production') {
     validateFnDescriptor('spawn', fnDescriptor)
@@ -190,6 +282,11 @@ export function spawn(fnDescriptor, ...args) {
   return detach(fork(fnDescriptor, ...args))
 }
 
+/**
+ *
+ * @param {*} taskOrTasks
+ * @returns {{type: 'JOIN', payload: taskOrTasks}
+ */
 export function join(taskOrTasks) {
   if (process.env.NODE_ENV !== 'production') {
     if (arguments.length > 1) {
@@ -207,6 +304,11 @@ export function join(taskOrTasks) {
   return makeEffect(effectTypes.JOIN, taskOrTasks)
 }
 
+/**
+ *
+ * @param {*} taskOrTasks
+ * @returns {{type: 'CANCEL', payload: taskOrTasks}
+ */
 export function cancel(taskOrTasks = SELF_CANCELLATION) {
   if (process.env.NODE_ENV !== 'production') {
     if (arguments.length > 1) {
@@ -226,6 +328,12 @@ export function cancel(taskOrTasks = SELF_CANCELLATION) {
   return makeEffect(effectTypes.CANCEL, taskOrTasks)
 }
 
+/**
+ *
+ * @param {*} selector
+ * @param  {...any} args
+ * @returns {{type: 'SELECT', payload: {selector, args}}
+ */
 export function select(selector = identity, ...args) {
   if (process.env.NODE_ENV !== 'production' && arguments.length) {
     check(arguments[0], is.notUndef, 'select(selector, [...]): argument selector is undefined')
@@ -237,6 +345,12 @@ export function select(selector = identity, ...args) {
 /**
   channel(pattern, [buffer])    => creates a proxy channel for store actions
 **/
+/**
+ * 为store的action创建一个代理channel
+ * @param {*} pattern
+ * @param {*} buffer
+ * @returns {{type: 'ACTION_CHANNEL', payload: {  pattern, buffer }}
+ */
 export function actionChannel(pattern, buffer) {
   if (process.env.NODE_ENV !== 'production') {
     check(pattern, is.pattern, 'actionChannel(pattern,...): argument pattern is not valid')
@@ -250,10 +364,17 @@ export function actionChannel(pattern, buffer) {
   return makeEffect(effectTypes.ACTION_CHANNEL, { pattern, buffer })
 }
 
+/**
+ *
+ * @returns {{type: 'CANCELLED', payload: {}}
+ */
 export function cancelled() {
   return makeEffect(effectTypes.CANCELLED, {})
 }
-
+/**
+ *
+ * @returns {{type: 'FLUSH', payload: channel}
+ */
 export function flush(channel) {
   if (process.env.NODE_ENV !== 'production') {
     check(channel, is.channel, `flush(channel): argument ${channel} is not valid channel`)
@@ -261,7 +382,10 @@ export function flush(channel) {
 
   return makeEffect(effectTypes.FLUSH, channel)
 }
-
+/**
+ *
+ * @returns {{type: 'GET_CONTEXT', payload: prop}
+ */
 export function getContext(prop) {
   if (process.env.NODE_ENV !== 'production') {
     check(prop, is.string, `getContext(prop): argument ${prop} is not a string`)
@@ -269,7 +393,10 @@ export function getContext(prop) {
 
   return makeEffect(effectTypes.GET_CONTEXT, prop)
 }
-
+/**
+ *
+ * @returns {{type: 'SET_CONTEXT', payload: props}
+ */
 export function setContext(props) {
   if (process.env.NODE_ENV !== 'production') {
     check(props, is.object, createSetContextWarning(null, props))

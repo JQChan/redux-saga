@@ -9,18 +9,26 @@ const ON_OVERFLOW_EXPAND = 4
 
 const zeroBuffer = { isEmpty: kTrue, put: noop, take: noop }
 
+/**
+ * 维护一个调用函数数组
+ * @param {*} limit
+ * @param {*} overflowAction
+ * @returns
+ */
 function ringBuffer(limit = 10, overflowAction) {
   let arr = new Array(limit)
   let length = 0
   let pushIndex = 0
   let popIndex = 0
 
+  /** 添加 */
   const push = it => {
     arr[pushIndex] = it
     pushIndex = (pushIndex + 1) % limit
     length++
   }
 
+  /** 获取 */
   const take = () => {
     if (length != 0) {
       let it = arr[popIndex]
@@ -31,6 +39,10 @@ function ringBuffer(limit = 10, overflowAction) {
     }
   }
 
+  /**
+   * 暴露
+   * @returns
+   */
   const flush = () => {
     let items = []
     while (length) {

@@ -1,5 +1,5 @@
-import * as is from '@redux-saga/is'
-import { CANCEL } from '@redux-saga/symbols'
+import * as is from '../../../is/src'
+import { CANCEL } from '../../../symbols/src'
 
 export default function resolvePromise(promise, cb) {
   const cancelPromise = promise[CANCEL]

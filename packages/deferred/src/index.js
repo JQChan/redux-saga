@@ -1,3 +1,7 @@
+/**
+ * 延时promise
+ * @returns {promise, resolve, reject}
+ */
 export default function deferred() {
   const def = {}
   def.promise = new Promise((resolve, reject) => {
@@ -7,6 +11,7 @@ export default function deferred() {
   return def
 }
 
+/** 延时数组 */
 export function arrayOfDeferred(length) {
   const arr = []
 

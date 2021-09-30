@@ -2,7 +2,20 @@ import fsmIterator, { safeName } from './fsmIterator'
 import { take, fork } from '../io'
 
 export default function takeEvery(patternOrChannel, worker, ...args) {
+  // {
+  //   done: fasle,
+  //   value: {
+  //     ["@@redux-saga/IO"]: true,
+  //     combinator: false,
+  //     type: 'TAKE',
+  //     payload: {
+  //       pattern:
+  //       patternOrChannel
+  //     }
+  //   }
+  // }
   const yTake = { done: false, value: take(patternOrChannel) }
+  // 接受一个action，返回fork
   const yFork = ac => ({ done: false, value: fork(worker, ...args, ac) })
 
   let action,
