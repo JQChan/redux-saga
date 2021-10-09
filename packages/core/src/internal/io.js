@@ -12,6 +12,12 @@ const TEST_HINT =
  * 返回一个action对象
  * @param {*} type
  * @param {*} payload
+ * @returns {{
+ *   "@@redux-saga/IO": true,
+ *   "combinator": false,
+ *   "type": type,
+ *   "payload": payload
+ * }}
  */
 const makeEffect = (type, payload) => ({
   [IO]: true,
@@ -27,7 +33,15 @@ const isForkEffect = eff => is.effect(eff) && eff.type === effectTypes.FORK
 /**
  * 分离Effect
  * @param {*} eff
- * @returns ({ type: 'FORK', payload: {...payload, detached: true}})
+ * @returns {{
+ *   "@@redux-saga/IO": true,
+ *   "combinator": false,
+ *    type: 'FORK',
+ *    payload: {
+ *        ...payload,
+ *        detached: true
+ *    }
+ * }}
  */
 export const detach = eff => {
   if (process.env.NODE_ENV !== 'production') {
@@ -40,7 +54,15 @@ export const detach = eff => {
  * 创建一个Effect，用来命令middleware在store上等待指定的action
  * @param {*} patternOrChannel
  * @param {*} multicastPattern 多播模式
- * @returns {{type: 'TAKE', payload: {pattern, channel}}
+ * @returns {{
+ *   "@@redux-saga/IO": true,
+ *   "combinator": false,
+ *    type: 'TAKE',
+ *    payload: {
+ *        pattern,
+ *        channel
+ *    }
+ * }}
  */
 export function take(patternOrChannel = '*', multicastPattern) {
   if (process.env.NODE_ENV !== 'production' && arguments.length) {
@@ -74,7 +96,15 @@ export function take(patternOrChannel = '*', multicastPattern) {
 /**
  *
  * @param  {...any} args
- * @returns {{type: 'TAKE', payload: {...payload, maybe}}
+ * @returns {{
+ *   "@@redux-saga/IO": true,
+ *   "combinator": false,
+ *    type: 'TAKE',
+ *    payload: {
+ *        ...payload,
+ *        maybe: true
+ *    }
+ * }}
  */
 export const takeMaybe = (...args) => {
   const eff = take(...args)
@@ -86,7 +116,15 @@ export const takeMaybe = (...args) => {
  *
  * @param {*} channel
  * @param {*} action
- * @returns {{type: 'PUT', payload: {channel, action}}
+ * @returns {{
+ *   "@@redux-saga/IO": true,
+ *   "combinator": false,
+ *    type: 'PUT',
+ *    payload: {
+ *        channel,
+ *        action
+ *    }
+ * }}
  */
 export function put(channel, action) {
   if (process.env.NODE_ENV !== 'production') {
@@ -109,7 +147,16 @@ export function put(channel, action) {
 /**
  * 获取putResolve Effect
  * @param  {...any} args
- * @returns {{type: 'PUT', payload: {channel, action, resolve: true}}
+ * @returns {{
+ *   "@@redux-saga/IO": true,
+ *   "combinator": false,
+ *    type: 'PUT',
+ *    payload: {
+ *        channel,
+ *        action,
+ *        resolve: true
+ *    }
+ * }}
  */
 export const putResolve = (...args) => {
   const eff = put(...args)
@@ -120,7 +167,12 @@ export const putResolve = (...args) => {
 /**
  * 获取ALL Effect
  * @param {*} effects
- * @returns {{type: 'ALL', payload: effects, combinator: true}
+ * @returns {{
+ *   "@@redux-saga/IO": true,
+ *   "combinator": true,
+ *    type: 'ALL',
+ *    payload: effects,
+ * }}
  */
 export function all(effects) {
   const eff = makeEffect(effectTypes.ALL, effects)
@@ -131,7 +183,12 @@ export function all(effects) {
 /**
  * 获取RACE Effect
  * @param {*} effects
- * @returns {{type: 'RACE', payload: effects, combinator: true}
+ * @returns {{
+ *   "@@redux-saga/IO": true,
+ *   "combinator": true,
+ *    type: 'RACE',
+ *    payload: effects,
+ * }}
  */
 export function race(effects) {
   const eff = makeEffect(effectTypes.RACE, effects)

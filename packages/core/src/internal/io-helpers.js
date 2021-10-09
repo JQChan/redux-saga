@@ -20,7 +20,17 @@ const validateTakeEffect = (fn, patternOrChannel, worker) => {
  * @param {*} patternOrChannel
  * @param {*} worker
  * @param  {...any} args
- * @returns {type: 'FORK', payload: { context, fn, args }
+ * @returns {type: 'FORK', payload: { context, fn, args: [patternOrChannel, worker, ...args] }
+ * @returns {{
+ *   "@@redux-saga/IO": true,
+ *   "combinator": false,
+ *    type: 'FORK',
+ *    payload: {
+ *        context: null,
+ *        args: [patternOrChannel, worker],
+ *        fn: takeEvery(patternOrChannel, worker)
+ *    }
+ * }}
  */
 export function takeEvery(patternOrChannel, worker, ...args) {
   if (process.env.NODE_ENV !== 'production') {

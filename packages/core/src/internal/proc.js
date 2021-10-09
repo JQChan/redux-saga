@@ -31,10 +31,13 @@ export default function proc(env, iterator, parentContext, parentEffectId, meta,
 
   /**
    Creates a new task descriptor for this generator.
+   为生成器创建一个新的任务描述符
    A task is the aggregation of it's mainTask and all it's forked tasks.
+   一个任务是它的mainTask和它所有fork任务的聚合
    **/
   const task = newTask(env, mainTask, parentContext, parentEffectId, meta, isRoot, cont)
 
+  /** 执行上下文 */
   const executingContext = {
     task,
     digestEffect,
@@ -117,7 +120,7 @@ export default function proc(env, iterator, parentContext, parentEffectId, meta,
         result = iterator.next(arg)
       }
 
-      // 如果迭代器未结束，继续执行消化Effect
+      // 如果迭代器未结束，继续执行消化Effect，回调是next本身
       if (!result.done) {
         digestEffect(result.value, parentEffectId, next)
       } else {
@@ -160,7 +163,7 @@ export default function proc(env, iterator, parentContext, parentEffectId, meta,
     // 如果Effect是promise
     if (is.promise(effect)) {
       resolvePromise(effect, currCb)
-      // 如果Effect是迭代器
+      // 如果Effect是迭代器，新起一个任务线程处理Effect
     } else if (is.iterator(effect)) {
       // resolve iterator
       proc(env, effect, task.context, effectId, meta, /* isRoot */ false, currCb)
@@ -214,6 +217,7 @@ export default function proc(env, iterator, parentContext, parentEffectId, meta,
         sagaError.setCrashedEffect(effect)
       }
 
+      // 执行下一个next
       cb(res, isErr)
     }
     // tracks down the current cancel
